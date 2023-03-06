@@ -9,63 +9,127 @@
 
 #define MS 102
 
-typedef struct {
-    int led;
-    char letter;
-    word onTime;
-    word offTime;
-} ledCycle;
+// typedef struct {
+//     int led;
+//     char letter;
+//     word onTime;
+//     word offTime;
+// } ledCycle;
 
-ledCycle greenCycle;
-ledCycle redCycle;
+// ledCycle greenCycle;
+// ledCycle redCycle;
 
-ledCycle cycles[2];
+// ledCycle cycles[2];
 
-int cyclesIndex;
+int greenLed = 1;
+char greenCharacter = 'G';
+word greenOn = 0;
+word greenOff = 0;
+
+int redLed = 0;
+char redCharacter = 'R';
+word redOn = 0;
+word redOff = 0;
+
+int ledFlag = 0;
+
+int testFLag = 0;
 
 Boolean On = NO;
 Boolean displayCycle = NO;
 
+// int led = 0;
+
+// word onTime = 0;
+// word offTime = 0;
+
 fsm blinker {
+    int led;
+    char ch;
+
+    word onTime;
+    word offTime;
+    
     state Check_PERIOD:
+        if(ledFlag == 0) {
+            led = redLed;
+            ch = redCharacter;
+            onTime = redOn;
+            offTime = redOff;
+
+            ledFlag = 1;
+        } else {
+            led = greenLed;
+            ch = greenCharacter;
+            onTime = greenOn;
+            offTime = greenOff;
+
+            ledFlag = 0;
+        }
+
         if(On)
-            leds(cycles[cyclesIndex].led, 1);
-            if(displayCycle) {
-                ser_outf(Check_PERIOD, "%c ", cycles[cyclesIndex].letter);
-            }
+            leds(led,1);
         else
-            leds(cycles[cyclesIndex].led, 0);
-        delay(cycles[cyclesIndex].onTime * MS,OFF_PERIOD);
+            leds(led,0);
+        
+        if (displayCycle)
+            ser_outf(Check_PERIOD, "%c", ch);
+
+        if(onTime > 0)
+            delay(onTime, OFF_PERIOD);
+        
         when(&On, Check_PERIOD);
         release;
     state OFF_PERIOD:
-        leds(cycles[cyclesIndex].led, 0);
-
-        word offTime = cycles[cyclesIndex].offTime;
+        leds(led,0);
         
-        cyclesIndex = (cyclesIndex + 1) % 2;
+        if(offTime > 0)
+            delay(offTime, Check_PERIOD);
         
-        delay(offTime * MS,Check_PERIOD);
         when(&On, Check_PERIOD);
         release;
 }
 
-void initCycles() {
-    redCycle.led = 0;
-    redCycle.letter = 'R';
-    redCycle.onTime = 0;
-    redCycle.offTime = 0;
+// fsm blinker {
+//     state Check_PERIOD:
+//         if(On)
+//             leds(cycles[cyclesIndex].led, 1);
+//             if(displayCycle) {
+//                 ser_outf(Check_PERIOD, "%c ", cycles[cyclesIndex].letter);
+//             }
+//         else
+//             leds(cycles[cyclesIndex].led, 0);
+//         delay(cycles[cyclesIndex].onTime * MS,OFF_PERIOD);
+//         when(&On, Check_PERIOD);
+//         release;
+//     state OFF_PERIOD:
+//         leds(cycles[cyclesIndex].led, 0);
 
-    greenCycle.led = 1;
-    greenCycle.letter = 'G';
-    greenCycle.onTime = 0;
-    greenCycle.offTime = 0;
+//         word offTime = cycles[cyclesIndex].offTime;
+        
+//         cyclesIndex = (cyclesIndex + 1) % 2;
+        
+//         delay(offTime * MS,Check_PERIOD);
+//         when(&On, Check_PERIOD);
+//         release;
+// }
 
-    cycles[0] = redCycle;
-    cycles[1] = greenCycle;
+// void initCycles() {
+//     redCycle.led = 0;
+//     redCycle.letter = 'R';
+//     redCycle.onTime = 0;
+//     redCycle.offTime = 0;
 
-    cyclesIndex = 0;
-}
+//     greenCycle.led = 1;
+//     greenCycle.letter = 'G';
+//     greenCycle.onTime = 0;
+//     greenCycle.offTime = 0;
+
+//     cycles[0] = redCycle;
+//     cycles[1] = greenCycle;
+
+//     cyclesIndex = 0;
+// }
 
 void processSettingsInput(char * settingsInput){
     word numbers[4];
@@ -84,11 +148,11 @@ void processSettingsInput(char * settingsInput){
         }
     }
 
-    cycles[0].onTime = numbers[0];
-    cycles[0].offTime = numbers[1];
+    redOn = numbers[0];
+    redOff = numbers[1];
 
-    cycles[1].onTime = numbers[2];
-    cycles[1].offTime = numbers[3];
+    greenOn = numbers[2];
+    greenOff = numbers[3];
 }
 
 fsm root {
@@ -96,13 +160,13 @@ fsm root {
     char username[NAME_LENGTH];
         
     state Initial:
-        initCycles();
-
         ser_outf(Initial, "Enter your name: ");
 
     state Get_Name:
         ser_in(Get_Name, username, NAME_LENGTH);
-        //runfsm blinker;
+    
+    state Run_Blinker:
+        runfsm blinker;
 
     state Show_Menu:
         ser_outf(Show_Menu, "Welcome %s\n\r"
@@ -140,14 +204,18 @@ fsm root {
 
         processSettingsInput(settings);
 
+        On = YES;
+
+        trigger(&On);
+
         proceed Show_Menu;
 
     state View_Settings:
         ser_outf(View_Settings, "(Red ON, OFF, Green ON, OFF) intervals: (%d, %d, %d, %d)\n\r",
-            cycles[0].onTime,
-            cycles[0].offTime,
-            cycles[1].onTime,
-            cycles[1].offTime
+            redOn,
+            redOff,
+            greenOn,
+            greenOff
         );
 
         proceed Show_Menu;
@@ -158,7 +226,7 @@ fsm root {
 
     state Await_Stop:
         char ch;
-        ser_inf(Await_Stop, "%c", ch);
+        ser_inf(Await_Stop, "%c", &ch);
         
         if(ch == 'S' || ch == 's'){
             displayCycle = NO;
