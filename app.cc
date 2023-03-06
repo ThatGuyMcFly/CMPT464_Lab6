@@ -2,25 +2,13 @@
 #include "ser.h"
 #include "serf.h"
 
-//#include <stdio.h>
-
+// Define max length of names and settings
 #define NAME_LENGTH 20
 #define SETTINGS_LENGTH 50
 
-#define MS 102
+#define MS = 1024 / 1000
 
-// typedef struct {
-//     int led;
-//     char letter;
-//     word onTime;
-//     word offTime;
-// } ledCycle;
-
-// ledCycle greenCycle;
-// ledCycle redCycle;
-
-// ledCycle cycles[2];
-
+// Set up and initialize the cycle variables
 int greenLed = 1;
 char greenCharacter = 'G';
 word greenOn = 0;
@@ -31,18 +19,14 @@ char redCharacter = 'R';
 word redOn = 0;
 word redOff = 0;
 
+// Flag for which LED cycle to show
 int ledFlag = 0;
 
-int testFLag = 0;
-
+// Boolean flags for flashing the LEDs and showing the cycle characters
 Boolean On = NO;
 Boolean displayCycle = NO;
 
-// int led = 0;
-
-// word onTime = 0;
-// word offTime = 0;
-
+// Finite state machine for flashing the LEDs and displaying cycle characters
 fsm blinker {
     int led;
     char ch;
@@ -51,6 +35,7 @@ fsm blinker {
     word offTime;
     
     state Check_PERIOD:
+        // Determine the LED, character and on and off times based on the desired LED
         if(ledFlag == 0) {
             led = redLed;
             ch = redCharacter;
@@ -67,69 +52,39 @@ fsm blinker {
             ledFlag = 0;
         }
 
+        // Turns the LED on or off depending on the state of On
         if(On)
             leds(led,1);
         else
             leds(led,0);
         
+        // Whether to display the cycle character
         if (displayCycle)
-            ser_outf(Check_PERIOD, "%c", ch);
+            ser_outf(Check_PERIOD, "%c ", ch);
 
+        // Set the delay if it is present
         if(onTime > 0)
             delay(onTime, OFF_PERIOD);
         
         when(&On, Check_PERIOD);
         release;
     state OFF_PERIOD:
+        // turn off the LED that was turned on in the Check_PERIOD state
         leds(led,0);
         
+        // Display the off character if required
+        if (displayCycle)
+            ser_outf(Check_PERIOD, "%c ", 'F');
+
+        // Set the delay if it is set
         if(offTime > 0)
             delay(offTime, Check_PERIOD);
-        
+        else
+            proceed Check_PERIOD;
+
         when(&On, Check_PERIOD);
         release;
 }
-
-// fsm blinker {
-//     state Check_PERIOD:
-//         if(On)
-//             leds(cycles[cyclesIndex].led, 1);
-//             if(displayCycle) {
-//                 ser_outf(Check_PERIOD, "%c ", cycles[cyclesIndex].letter);
-//             }
-//         else
-//             leds(cycles[cyclesIndex].led, 0);
-//         delay(cycles[cyclesIndex].onTime * MS,OFF_PERIOD);
-//         when(&On, Check_PERIOD);
-//         release;
-//     state OFF_PERIOD:
-//         leds(cycles[cyclesIndex].led, 0);
-
-//         word offTime = cycles[cyclesIndex].offTime;
-        
-//         cyclesIndex = (cyclesIndex + 1) % 2;
-        
-//         delay(offTime * MS,Check_PERIOD);
-//         when(&On, Check_PERIOD);
-//         release;
-// }
-
-// void initCycles() {
-//     redCycle.led = 0;
-//     redCycle.letter = 'R';
-//     redCycle.onTime = 0;
-//     redCycle.offTime = 0;
-
-//     greenCycle.led = 1;
-//     greenCycle.letter = 'G';
-//     greenCycle.onTime = 0;
-//     greenCycle.offTime = 0;
-
-//     cycles[0] = redCycle;
-//     cycles[1] = greenCycle;
-
-//     cyclesIndex = 0;
-// }
 
 void processSettingsInput(char * settingsInput){
     word numbers[4];
@@ -137,12 +92,15 @@ void processSettingsInput(char * settingsInput){
 
     word number = 0;
 
+    // Extract the intervals from the settings input string
     for (int i = 0; i < SETTINGS_LENGTH; i++) {
         if(settingsInput[i] == ' ') {
+            // seperate the input on the spaces
             numbers[numbersIndex] = number;
             number = 0;
             numbersIndex++;
         } else if (settingsInput[i] >= '0' && settingsInput[i] <= '9') {
+            // only handle number character
             number = number * 10;
             number += settingsInput[i] - 48;
         }
@@ -155,6 +113,7 @@ void processSettingsInput(char * settingsInput){
     greenOff = numbers[3];
 }
 
+// Root finite state machine that handles user input
 fsm root {
 
     char username[NAME_LENGTH];
@@ -236,6 +195,10 @@ fsm root {
         proceed Monitor;
 
     state Stop:
+        On = NO;
+
         leds(1, 0);
         leds(0, 0);
+
+        proceed Show_Menu;
 }
