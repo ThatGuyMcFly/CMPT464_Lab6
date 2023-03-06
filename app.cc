@@ -5,14 +5,15 @@
 //#include <stdio.h>
 
 #define NAME_LENGTH 20
+#define SETTINGS_LENGTH 50
 
 #define MS 102
 
 typedef struct {
     int led;
     char letter;
-    int onTime;
-    int offTime;
+    word onTime;
+    word offTime;
 } ledCycle;
 
 ledCycle greenCycle;
@@ -40,7 +41,7 @@ fsm blinker {
     state OFF_PERIOD:
         leds(cycles[cyclesIndex].led, 0);
 
-        int offTime = cycles[cyclesIndex].offTime;
+        word offTime = cycles[cyclesIndex].offTime;
         
         cyclesIndex = (cyclesIndex + 1) % 2;
         
@@ -66,40 +67,36 @@ void initCycles() {
     cyclesIndex = 0;
 }
 
-int processSettingsInput(char * settingsInput){
-    int numbers[3];
+void processSettingsInput(char * settingsInput){
+    word numbers[4];
     int numbersIndex = 0;
 
-    int number = 0;
+    word number = 0;
     int numberMultiplier = 1;
 
-    for (int i = strlen(settingsInput); i >= 0; i++) {
+    for (int i = 0; i < NAME_LENGTH; i++) {
         if(settingsInput[i] == ' ') {
             numbers[numbersIndex] = number;
             number = 0;
             numbersIndex++;
             numberMultiplier = 1;
         } else if (settingsInput[i] >= '0' && settingsInput[i] <= '9') {
-            number += number * numberMultiplier;
+            number = number * numberMultiplier;
+            number += settingsInput[i] - 48;
             numberMultiplier = numberMultiplier * 10;
-        } else {
-            return 1;
         }
     }
 
-    redCycle.onTime = numbers[2];
-    redCycle.offTime = numbers[1];
+    cycles[0].onTime = numbers[0];
+    cycles[0].offTime = numbers[1];
 
-    greenCycle.onTime = numbers[0];
-    greenCycle.offTime = number;
-
-    return 0;    
+    cycles[1].onTime = numbers[2];
+    cycles[1].offTime = numbers[3];
 }
 
 fsm root {
 
     char username[NAME_LENGTH];
-    char * settings;
         
     state Initial:
         initCycles();
@@ -134,13 +131,15 @@ fsm root {
             proceed Monitor;
         }
 
-        proceed Get_Choice;
+        proceed Show_Menu;
 
     state Adjust_Intervals:
         ser_outf(Initial, "Enter the intervals (Red ON, OFF, Green ON, OFF): ");
 
     state Set_Intervals:
-        ser_in(Get_Name, settings, NAME_LENGTH);
+        char settings[SETTINGS_LENGTH];
+
+        ser_in(Set_Intervals, settings, SETTINGS_LENGTH);
 
         processSettingsInput(settings);
 
@@ -169,7 +168,7 @@ fsm root {
             proceed Show_Menu;
         }
         
-        proceed Await_Stop;
+        proceed Monitor;
 
     state Stop:
         leds(1, 0);

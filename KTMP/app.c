@@ -5973,19 +5973,12 @@ int scan (const char*, const char*, ...);
 
 int ser_outf (word, const char*, ...);
 int ser_inf (word, const char*, ...);
-# 4 "app.cc"
-
-
-
-
-
-
-
+# 12 "app.cc"
 typedef struct {
     int led;
     char letter;
-    int onTime;
-    int offTime;
+    word onTime;
+    word offTime;
 } ledCycle;
 
 ledCycle greenCycle;
@@ -6001,9 +5994,9 @@ Boolean displayCycle = 0;
 
 #define Check_PERIOD 0
 #define OFF_PERIOD 1
-# 28 "app.cc"
+# 29 "app.cc"
 void blinker (word __pi_st) { switch (__pi_st) { 
-# 28 "app.cc"
+# 29 "app.cc"
 
     case Check_PERIOD : __stlab_Check_PERIOD: {
         if(On)
@@ -6019,7 +6012,7 @@ void blinker (word __pi_st) { switch (__pi_st) {
     } case OFF_PERIOD : __stlab_OFF_PERIOD: {
         do { if ((0) == 0) { if ((cycles[cyclesIndex].led) == 0) { do { GPIO_clearDio (6); __pi_systat.ledsts &= ~(0x1); } while (0); } else if ((cycles[cyclesIndex].led) == 1) { do { GPIO_clearDio (7); __pi_systat.ledsts &= ~(0x2); } while (0); } else if ((cycles[cyclesIndex].led) == 2) { do { } while (0); } else if ((cycles[cyclesIndex].led) == 3) { do { } while (0); } } else if ((0) == 1) { if ((cycles[cyclesIndex].led) == 0) { do { GPIO_setDio (6) ; __pi_systat.ledsts &= ~(0x1); } while (0); } else if ((cycles[cyclesIndex].led) == 1) { do { GPIO_setDio (7) ; __pi_systat.ledsts &= ~(0x2); } while (0); } else if ((cycles[cyclesIndex].led) == 2) { do { } while (0); } else if ((cycles[cyclesIndex].led) == 3) { do { } while (0); } } else { if ((cycles[cyclesIndex].led) == 0) { do { GPIO_setDio (6) ; __pi_systat.ledsts |= (0x1); } while (0); } else if ((cycles[cyclesIndex].led) == 1) { do { GPIO_setDio (7) ; __pi_systat.ledsts |= (0x2); } while (0); } else if ((cycles[cyclesIndex].led) == 2) { do { } while (0); } else if ((cycles[cyclesIndex].led) == 3) { do { } while (0); } tci_run_auxiliary_timer (); } } while (0);
 
-        int offTime = cycles[cyclesIndex].offTime;
+        word offTime = cycles[cyclesIndex].offTime;
 
         cyclesIndex = (cyclesIndex + 1) % 2;
 
@@ -6029,7 +6022,7 @@ void blinker (word __pi_st) { switch (__pi_st) {
 break; } default: __pi_badstate (); } }
 #undef Check_PERIOD
 #undef OFF_PERIOD
-# 50 "app.cc"
+# 51 "app.cc"
 
 
 void initCycles() {
@@ -6049,34 +6042,31 @@ void initCycles() {
     cyclesIndex = 0;
 }
 
-int processSettingsInput(char * settingsInput){
-    int numbers[3];
+void processSettingsInput(char * settingsInput){
+    word numbers[4];
     int numbersIndex = 0;
 
-    int number = 0;
+    word number = 0;
     int numberMultiplier = 1;
 
-    for (int i = __pi_strlen (settingsInput); i >= 0; i++) {
+    for (int i = 0; i < 20; i++) {
         if(settingsInput[i] == ' ') {
             numbers[numbersIndex] = number;
             number = 0;
             numbersIndex++;
             numberMultiplier = 1;
         } else if (settingsInput[i] >= '0' && settingsInput[i] <= '9') {
-            number += number * numberMultiplier;
+            number = number * numberMultiplier;
+            number += settingsInput[i] - 48;
             numberMultiplier = numberMultiplier * 10;
-        } else {
-            return 1;
         }
     }
 
-    redCycle.onTime = numbers[2];
-    redCycle.offTime = numbers[1];
+    cycles[0].onTime = numbers[0];
+    cycles[0].offTime = numbers[1];
 
-    greenCycle.onTime = numbers[0];
-    greenCycle.offTime = number;
-
-    return 0;
+    cycles[1].onTime = numbers[2];
+    cycles[1].offTime = numbers[3];
 }
 
 
@@ -6090,13 +6080,12 @@ int processSettingsInput(char * settingsInput){
 #define Monitor 7
 #define Await_Stop 8
 #define Stop 9
-# 99 "app.cc"
+# 97 "app.cc"
 void root (word __pi_st) { switch (__pi_st) { 
-# 99 "app.cc"
+# 97 "app.cc"
 
 
     static char username[20];
-    static char *settings;
 
     case Initial : __stlab_Initial: {
         initCycles();
@@ -6131,13 +6120,15 @@ void root (word __pi_st) { switch (__pi_st) {
             proceed (Monitor);
         }
 
-        proceed (Get_Choice);
+        proceed (Show_Menu);
 
     } case Adjust_Intervals : __stlab_Adjust_Intervals: {
         ser_outf(Initial, "Enter the intervals (Red ON, OFF, Green ON, OFF): ");
 
     } case Set_Intervals : __stlab_Set_Intervals: {
-        ser_in(Get_Name, settings, 20);
+        char settings[50];
+
+        ser_in(Set_Intervals, settings, 50);
 
         processSettingsInput(settings);
 
@@ -6166,7 +6157,7 @@ void root (word __pi_st) { switch (__pi_st) {
             proceed (Show_Menu);
         }
 
-        proceed (Await_Stop);
+        proceed (Monitor);
 
     } case Stop : __stlab_Stop: {
         do { if ((0) == 0) { if ((1) == 0) { do { GPIO_clearDio (6); __pi_systat.ledsts &= ~(0x1); } while (0); } else if ((1) == 1) { do { GPIO_clearDio (7); __pi_systat.ledsts &= ~(0x2); } while (0); } else if ((1) == 2) { do { } while (0); } else if ((1) == 3) { do { } while (0); } } else if ((0) == 1) { if ((1) == 0) { do { GPIO_setDio (6) ; __pi_systat.ledsts &= ~(0x1); } while (0); } else if ((1) == 1) { do { GPIO_setDio (7) ; __pi_systat.ledsts &= ~(0x2); } while (0); } else if ((1) == 2) { do { } while (0); } else if ((1) == 3) { do { } while (0); } } else { if ((1) == 0) { do { GPIO_setDio (6) ; __pi_systat.ledsts |= (0x1); } while (0); } else if ((1) == 1) { do { GPIO_setDio (7) ; __pi_systat.ledsts |= (0x2); } while (0); } else if ((1) == 2) { do { } while (0); } else if ((1) == 3) { do { } while (0); } tci_run_auxiliary_timer (); } } while (0);
@@ -6182,5 +6173,5 @@ break; } default: __pi_badstate (); } }
 #undef Monitor
 #undef Await_Stop
 #undef Stop
-# 177 "app.cc"
+# 176 "app.cc"
 
