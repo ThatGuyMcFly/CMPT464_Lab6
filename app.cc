@@ -72,18 +72,15 @@ void processSettingsInput(char * settingsInput){
     int numbersIndex = 0;
 
     word number = 0;
-    int numberMultiplier = 1;
 
-    for (int i = 0; i < NAME_LENGTH; i++) {
+    for (int i = 0; i < SETTINGS_LENGTH; i++) {
         if(settingsInput[i] == ' ') {
             numbers[numbersIndex] = number;
             number = 0;
             numbersIndex++;
-            numberMultiplier = 1;
         } else if (settingsInput[i] >= '0' && settingsInput[i] <= '9') {
-            number = number * numberMultiplier;
+            number = number * 10;
             number += settingsInput[i] - 48;
-            numberMultiplier = numberMultiplier * 10;
         }
     }
 

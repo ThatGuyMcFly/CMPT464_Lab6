@@ -6047,18 +6047,15 @@ void processSettingsInput(char * settingsInput){
     int numbersIndex = 0;
 
     word number = 0;
-    int numberMultiplier = 1;
 
-    for (int i = 0; i < 20; i++) {
+    for (int i = 0; i < 50; i++) {
         if(settingsInput[i] == ' ') {
             numbers[numbersIndex] = number;
             number = 0;
             numbersIndex++;
-            numberMultiplier = 1;
         } else if (settingsInput[i] >= '0' && settingsInput[i] <= '9') {
-            number = number * numberMultiplier;
+            number = number * 10;
             number += settingsInput[i] - 48;
-            numberMultiplier = numberMultiplier * 10;
         }
     }
 
@@ -6080,9 +6077,9 @@ void processSettingsInput(char * settingsInput){
 #define Monitor 7
 #define Await_Stop 8
 #define Stop 9
-# 97 "app.cc"
+# 94 "app.cc"
 void root (word __pi_st) { switch (__pi_st) { 
-# 97 "app.cc"
+# 94 "app.cc"
 
 
     static char username[20];
@@ -6173,5 +6170,5 @@ break; } default: __pi_badstate (); } }
 #undef Monitor
 #undef Await_Stop
 #undef Stop
-# 176 "app.cc"
+# 173 "app.cc"
 
