@@ -28,6 +28,8 @@ char redCharacter = 'R';
 word redOn = 0;
 word redOff = 0;
 
+
+
 // Boolean flags for flashing the LEDs and showing the cycle characters
 Boolean On = NO;
 Boolean displayCycle = NO;
