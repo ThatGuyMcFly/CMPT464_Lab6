@@ -1,3 +1,12 @@
+/**
+ * Martin Knoetze
+ * SN: 3086754
+ * CMPT464 Lab6
+ * Due: March 8th, 2023
+ * 
+ * app.cc
+*/
+
 #include "sysio.h"
 #include "ser.h"
 #include "serf.h"
@@ -6,7 +15,7 @@
 #define NAME_LENGTH 20
 #define SETTINGS_LENGTH 50
 
-#define MS = 1024 / 1000
+#define SECOND 1024
 
 // Set up and initialize the cycle variables
 int greenLed = 1;
@@ -26,14 +35,27 @@ int ledFlag = 0;
 Boolean On = NO;
 Boolean displayCycle = NO;
 
+/**
+ * Adjusts a time in milliseconds to the closets number of cycles
+ * 
+ * Parameter:
+ *  time - the time in milliseconds
+ * 
+ * Return:
+ *  The number of cycles to equal the time
+*/
+word adjustTime(word time) {
+    return (time * SECOND)/1000;
+}
+
 // Finite state machine for flashing the LEDs and displaying cycle characters
 fsm blinker {
     int led;
     char ch;
 
-    word onTime;
-    word offTime;
-    
+    int onTime;
+    int offTime;
+        
     state Check_PERIOD:
         // Determine the LED, character and on and off times based on the desired LED
         if(ledFlag == 0) {
@@ -41,30 +63,36 @@ fsm blinker {
             ch = redCharacter;
             onTime = redOn;
             offTime = redOff;
-
-            ledFlag = 1;
         } else {
             led = greenLed;
             ch = greenCharacter;
             onTime = greenOn;
             offTime = greenOff;
-
-            ledFlag = 0;
         }
-
-        // Turns the LED on or off depending on the state of On
-        if(On)
-            leds(led,1);
-        else
-            leds(led,0);
         
+        // toggle the LED flag
+        ledFlag = 1 - ledFlag;
+
+        // adjust on and off times
+        onTime = adjustTime(onTime);
+        offTime = adjustTime(offTime);
+
         // Whether to display the cycle character
         if (displayCycle)
             ser_outf(Check_PERIOD, "%c ", ch);
 
-        // Set the delay if it is present
-        if(onTime > 0)
+        if(onTime > 0){
+            // Turns the LED on or off depending on the state of On
+            if(On)
+                leds(led,1);
+            else
+                leds(led,0);
+
+            // Set the delay
             delay(onTime, OFF_PERIOD);
+        } else {
+            proceed OFF_PERIOD;
+        }
         
         when(&On, Check_PERIOD);
         release;
@@ -86,8 +114,15 @@ fsm blinker {
         release;
 }
 
+/**
+ * Extracts the time intervals from the user input and assings the times
+ * to their respective variables
+ * 
+ * Parameters:
+ *  settingsInput: The string that holds the user inputted time intervals
+*/
 void processSettingsInput(char * settingsInput){
-    word numbers[4];
+    word numbers[] = {0, 0, 0, 0};
     int numbersIndex = 0;
 
     word number = 0;
@@ -117,15 +152,16 @@ void processSettingsInput(char * settingsInput){
 fsm root {
 
     char username[NAME_LENGTH];
+    
+    fsmcode blinkerCode;
+
+    Boolean blinkerRunning = NO;
         
     state Initial:
         ser_outf(Initial, "Enter your name: ");
 
     state Get_Name:
         ser_in(Get_Name, username, NAME_LENGTH);
-    
-    state Run_Blinker:
-        runfsm blinker;
 
     state Show_Menu:
         ser_outf(Show_Menu, "Welcome %s\n\r"
@@ -163,6 +199,14 @@ fsm root {
 
         processSettingsInput(settings);
 
+    state Start_Blinker:
+
+        if(!blinkerRunning) {
+            // only calls the blinker fsm if it isn't running already
+            blinkerCode = runfsm blinker;
+            blinkerRunning = YES;
+        }
+
         On = YES;
 
         trigger(&On);
@@ -187,6 +231,7 @@ fsm root {
         char ch;
         ser_inf(Await_Stop, "%c", &ch);
         
+        // ensures monitoring only stops when 'S' or 's' are entered
         if(ch == 'S' || ch == 's'){
             displayCycle = NO;
             proceed Show_Menu;
@@ -197,8 +242,13 @@ fsm root {
     state Stop:
         On = NO;
 
-        leds(1, 0);
-        leds(0, 0);
+        // Makes sure that the blinker code hasa been assigned to an actual value first
+        if(blinkerCode != 0x0) {
+            killall(blinkerCode);
+        }
+
+        // turn off all LEDs
+        leds_all(0);
 
         proceed Show_Menu;
 }

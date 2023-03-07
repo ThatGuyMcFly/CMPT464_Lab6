@@ -5973,7 +5973,7 @@ int scan (const char*, const char*, ...);
 
 int ser_outf (word, const char*, ...);
 int ser_inf (word, const char*, ...);
-# 12 "app.cc"
+# 21 "app.cc"
 int greenLed = 1;
 char greenCharacter = 'G';
 word greenOn = 0;
@@ -5993,17 +5993,30 @@ Boolean displayCycle = 0;
 
 
 
+
+
+
+
+
+
+
+word adjustTime(word time) {
+    return (time * 1024)/1000;
+}
+
+
+
 #define Check_PERIOD 0
 #define OFF_PERIOD 1
-# 30 "app.cc"
+# 52 "app.cc"
 void blinker (word __pi_st) { switch (__pi_st) { 
-# 30 "app.cc"
+# 52 "app.cc"
 
     static int led;
     static char ch;
 
-    static word onTime;
-    static word offTime;
+    static int onTime;
+    static int offTime;
 
     case Check_PERIOD : __stlab_Check_PERIOD: {
 
@@ -6012,30 +6025,36 @@ void blinker (word __pi_st) { switch (__pi_st) {
             ch = redCharacter;
             onTime = redOn;
             offTime = redOff;
-
-            ledFlag = 1;
         } else {
             led = greenLed;
             ch = greenCharacter;
             onTime = greenOn;
             offTime = greenOff;
-
-            ledFlag = 0;
         }
 
 
-        if(On)
-            do { if ((1) == 0) { if ((led) == 0) { do { GPIO_clearDio (6); __pi_systat.ledsts &= ~(0x1); } while (0); } else if ((led) == 1) { do { GPIO_clearDio (7); __pi_systat.ledsts &= ~(0x2); } while (0); } else if ((led) == 2) { do { } while (0); } else if ((led) == 3) { do { } while (0); } } else if ((1) == 1) { if ((led) == 0) { do { GPIO_setDio (6) ; __pi_systat.ledsts &= ~(0x1); } while (0); } else if ((led) == 1) { do { GPIO_setDio (7) ; __pi_systat.ledsts &= ~(0x2); } while (0); } else if ((led) == 2) { do { } while (0); } else if ((led) == 3) { do { } while (0); } } else { if ((led) == 0) { do { GPIO_setDio (6) ; __pi_systat.ledsts |= (0x1); } while (0); } else if ((led) == 1) { do { GPIO_setDio (7) ; __pi_systat.ledsts |= (0x2); } while (0); } else if ((led) == 2) { do { } while (0); } else if ((led) == 3) { do { } while (0); } tci_run_auxiliary_timer (); } } while (0);
-        else
-            do { if ((0) == 0) { if ((led) == 0) { do { GPIO_clearDio (6); __pi_systat.ledsts &= ~(0x1); } while (0); } else if ((led) == 1) { do { GPIO_clearDio (7); __pi_systat.ledsts &= ~(0x2); } while (0); } else if ((led) == 2) { do { } while (0); } else if ((led) == 3) { do { } while (0); } } else if ((0) == 1) { if ((led) == 0) { do { GPIO_setDio (6) ; __pi_systat.ledsts &= ~(0x1); } while (0); } else if ((led) == 1) { do { GPIO_setDio (7) ; __pi_systat.ledsts &= ~(0x2); } while (0); } else if ((led) == 2) { do { } while (0); } else if ((led) == 3) { do { } while (0); } } else { if ((led) == 0) { do { GPIO_setDio (6) ; __pi_systat.ledsts |= (0x1); } while (0); } else if ((led) == 1) { do { GPIO_setDio (7) ; __pi_systat.ledsts |= (0x2); } while (0); } else if ((led) == 2) { do { } while (0); } else if ((led) == 3) { do { } while (0); } tci_run_auxiliary_timer (); } } while (0);
+        ledFlag = 1 - ledFlag;
+
+
+        onTime = adjustTime(onTime);
+        offTime = adjustTime(offTime);
 
 
         if (displayCycle)
-            ser_outf(Check_PERIOD, "%c %d ", ch, onTime);
+            ser_outf(Check_PERIOD, "%c ", ch);
+
+        if(onTime > 0){
+
+            if(On)
+                do { if ((1) == 0) { if ((led) == 0) { do { GPIO_clearDio (6); __pi_systat.ledsts &= ~(0x1); } while (0); } else if ((led) == 1) { do { GPIO_clearDio (7); __pi_systat.ledsts &= ~(0x2); } while (0); } else if ((led) == 2) { do { } while (0); } else if ((led) == 3) { do { } while (0); } } else if ((1) == 1) { if ((led) == 0) { do { GPIO_setDio (6) ; __pi_systat.ledsts &= ~(0x1); } while (0); } else if ((led) == 1) { do { GPIO_setDio (7) ; __pi_systat.ledsts &= ~(0x2); } while (0); } else if ((led) == 2) { do { } while (0); } else if ((led) == 3) { do { } while (0); } } else { if ((led) == 0) { do { GPIO_setDio (6) ; __pi_systat.ledsts |= (0x1); } while (0); } else if ((led) == 1) { do { GPIO_setDio (7) ; __pi_systat.ledsts |= (0x2); } while (0); } else if ((led) == 2) { do { } while (0); } else if ((led) == 3) { do { } while (0); } tci_run_auxiliary_timer (); } } while (0);
+            else
+                do { if ((0) == 0) { if ((led) == 0) { do { GPIO_clearDio (6); __pi_systat.ledsts &= ~(0x1); } while (0); } else if ((led) == 1) { do { GPIO_clearDio (7); __pi_systat.ledsts &= ~(0x2); } while (0); } else if ((led) == 2) { do { } while (0); } else if ((led) == 3) { do { } while (0); } } else if ((0) == 1) { if ((led) == 0) { do { GPIO_setDio (6) ; __pi_systat.ledsts &= ~(0x1); } while (0); } else if ((led) == 1) { do { GPIO_setDio (7) ; __pi_systat.ledsts &= ~(0x2); } while (0); } else if ((led) == 2) { do { } while (0); } else if ((led) == 3) { do { } while (0); } } else { if ((led) == 0) { do { GPIO_setDio (6) ; __pi_systat.ledsts |= (0x1); } while (0); } else if ((led) == 1) { do { GPIO_setDio (7) ; __pi_systat.ledsts |= (0x2); } while (0); } else if ((led) == 2) { do { } while (0); } else if ((led) == 3) { do { } while (0); } tci_run_auxiliary_timer (); } } while (0);
 
 
-        if(onTime > 0)
             delay(onTime, OFF_PERIOD);
+        } else {
+            proceed (OFF_PERIOD);
+        }
 
         __pi_wait ((aword)(&On),Check_PERIOD);
         __pi_release ();
@@ -6045,7 +6064,7 @@ void blinker (word __pi_st) { switch (__pi_st) {
 
 
         if (displayCycle)
-            ser_outf(Check_PERIOD, "%c %d ", 'F', offTime);
+            ser_outf(Check_PERIOD, "%c ", 'F');
 
 
         if(offTime > 0)
@@ -6058,21 +6077,31 @@ void blinker (word __pi_st) { switch (__pi_st) {
 break; } default: __pi_badstate (); } }
 #undef Check_PERIOD
 #undef OFF_PERIOD
-# 87 "app.cc"
+# 115 "app.cc"
+
+
+
+
+
+
+
 
 
 void processSettingsInput(char * settingsInput){
-    word numbers[4];
+    word numbers[] = {0, 0, 0, 0};
     int numbersIndex = 0;
 
     word number = 0;
 
+
     for (int i = 0; i < 50; i++) {
         if(settingsInput[i] == ' ') {
+
             numbers[numbersIndex] = number;
             number = 0;
             numbersIndex++;
         } else if (settingsInput[i] >= '0' && settingsInput[i] <= '9') {
+
             number = number * 10;
             number += settingsInput[i] - 48;
         }
@@ -6086,32 +6115,34 @@ void processSettingsInput(char * settingsInput){
 }
 
 
+
 #define Initial 0
 #define Get_Name 1
-#define Run_Blinker 2
-#define Show_Menu 3
-#define Get_Choice 4
-#define Adjust_Intervals 5
-#define Set_Intervals 6
+#define Show_Menu 2
+#define Get_Choice 3
+#define Adjust_Intervals 4
+#define Set_Intervals 5
+#define Start_Blinker 6
 #define View_Settings 7
 #define Monitor 8
 #define Await_Stop 9
 #define Stop 10
-# 113 "app.cc"
+# 152 "app.cc"
 void root (word __pi_st) { switch (__pi_st) { 
-# 113 "app.cc"
+# 152 "app.cc"
 
 
     static char username[20];
+
+    static fsmcode blinkerCode;
+
+    static Boolean blinkerRunning=0 ;
 
     case Initial : __stlab_Initial: {
         ser_outf(Initial, "Enter your name: ");
 
     } case Get_Name : __stlab_Get_Name: {
         ser_in(Get_Name, username, 20);
-
-    } case Run_Blinker : __stlab_Run_Blinker: {
-        __pi_fork (blinker, 0);
 
     } case Show_Menu : __stlab_Show_Menu: {
         ser_outf(Show_Menu, "Welcome %s\n\r"
@@ -6149,6 +6180,14 @@ void root (word __pi_st) { switch (__pi_st) {
 
         processSettingsInput(settings);
 
+    } case Start_Blinker : __stlab_Start_Blinker: {
+
+        if(!blinkerRunning) {
+
+            blinkerCode = __pi_fork (blinker, 0);
+            blinkerRunning = 1;
+        }
+
         On = 1;
 
         __pi_trigger ((aword)(&On));
@@ -6173,6 +6212,7 @@ void root (word __pi_st) { switch (__pi_st) {
         char ch;
         ser_inf(Await_Stop, "%c", &ch);
 
+
         if(ch == 'S' || ch == 's'){
             displayCycle = 0;
             proceed (Show_Menu);
@@ -6183,21 +6223,26 @@ void root (word __pi_st) { switch (__pi_st) {
     } case Stop : __stlab_Stop: {
         On = 0;
 
-        do { if ((0) == 0) { if ((1) == 0) { do { GPIO_clearDio (6); __pi_systat.ledsts &= ~(0x1); } while (0); } else if ((1) == 1) { do { GPIO_clearDio (7); __pi_systat.ledsts &= ~(0x2); } while (0); } else if ((1) == 2) { do { } while (0); } else if ((1) == 3) { do { } while (0); } } else if ((0) == 1) { if ((1) == 0) { do { GPIO_setDio (6) ; __pi_systat.ledsts &= ~(0x1); } while (0); } else if ((1) == 1) { do { GPIO_setDio (7) ; __pi_systat.ledsts &= ~(0x2); } while (0); } else if ((1) == 2) { do { } while (0); } else if ((1) == 3) { do { } while (0); } } else { if ((1) == 0) { do { GPIO_setDio (6) ; __pi_systat.ledsts |= (0x1); } while (0); } else if ((1) == 1) { do { GPIO_setDio (7) ; __pi_systat.ledsts |= (0x2); } while (0); } else if ((1) == 2) { do { } while (0); } else if ((1) == 3) { do { } while (0); } tci_run_auxiliary_timer (); } } while (0);
-        do { if ((0) == 0) { if ((0) == 0) { do { GPIO_clearDio (6); __pi_systat.ledsts &= ~(0x1); } while (0); } else if ((0) == 1) { do { GPIO_clearDio (7); __pi_systat.ledsts &= ~(0x2); } while (0); } else if ((0) == 2) { do { } while (0); } else if ((0) == 3) { do { } while (0); } } else if ((0) == 1) { if ((0) == 0) { do { GPIO_setDio (6) ; __pi_systat.ledsts &= ~(0x1); } while (0); } else if ((0) == 1) { do { GPIO_setDio (7) ; __pi_systat.ledsts &= ~(0x2); } while (0); } else if ((0) == 2) { do { } while (0); } else if ((0) == 3) { do { } while (0); } } else { if ((0) == 0) { do { GPIO_setDio (6) ; __pi_systat.ledsts |= (0x1); } while (0); } else if ((0) == 1) { do { GPIO_setDio (7) ; __pi_systat.ledsts |= (0x2); } while (0); } else if ((0) == 2) { do { } while (0); } else if ((0) == 3) { do { } while (0); } tci_run_auxiliary_timer (); } } while (0);
+
+        if(blinkerCode != 0x0) {
+            killall(blinkerCode);
+        }
+
+
+        do { if ((0) == 0) { do { GPIO_clearDio (6); GPIO_clearDio (7); do { } while (0); do { } while (0); __pi_systat.ledsts &= ~(0xF); } while (0); } else if ((0) == 1) { do { GPIO_setDio (6); GPIO_setDio (7); do { } while (0); do { } while (0); __pi_systat.ledsts &= ~(0xF); } while (0); } else { do { GPIO_setDio (6); GPIO_setDio (7); do { } while (0); do { } while (0); __pi_systat.ledsts |= (1 | 2 | 0 | 0); } while (0); tci_run_auxiliary_timer (); } } while (0);
 
         proceed (Show_Menu);
 break; } default: __pi_badstate (); } }
 #undef Initial
 #undef Get_Name
-#undef Run_Blinker
 #undef Show_Menu
 #undef Get_Choice
 #undef Adjust_Intervals
 #undef Set_Intervals
+#undef Start_Blinker
 #undef View_Settings
 #undef Monitor
 #undef Await_Stop
 #undef Stop
-# 200 "app.cc"
+# 254 "app.cc"
 
