@@ -31,6 +31,7 @@ word redOff = 0;
 // Boolean flags for flashing the LEDs and showing the cycle characters
 Boolean On = NO;
 Boolean displayCycle = NO;
+Boolean stopProcess = NO;
 
 /**
  * Adjusts a time in milliseconds to the closets number of cycles
@@ -92,6 +93,7 @@ fsm blinker {
         }
         
         when(&On, Check_PERIOD);
+        when(&stopProcess, Stop);
         release;
     state OFF_PERIOD:
         // turn off the LED that was turned on in the Check_PERIOD state
@@ -108,7 +110,11 @@ fsm blinker {
             proceed Check_PERIOD;
 
         when(&On, Check_PERIOD);
+        when(&stopProcess, Stop);
         release;
+    state Stop:
+        finish;
+
 }
 
 /**
@@ -122,24 +128,27 @@ fsm blinker {
  *  Returns 0 if the input settings were processed successfully, and 1 if not
 */
 int processSettingsInput(char * settingsInput){
-    word numbers[] = {0, 0, 0, 0};
+    word numbers[] = {0, 0, 0};
     int numbersIndex = 0;
 
     word number = 0;
 
     // Extract the intervals from the settings input string
-    for (int i = 0; i < SETTINGS_LENGTH; i++) {
+    for (int i = 0; i < strlen(settingsImput); i++) {
         if(settingsInput[i] == ' ') {
-            // seperate the input on the spaces
-            numbers[numbersIndex] = number;
-            number = 0;
-            numbersIndex++;
+            // ignore consecutive spaces
+            if(settingsInput[i] + 1 != ' '){
+                // seperate the input on the spaces
+                numbers[numbersIndex] = number;
+                number = 0;
+                numbersIndex++;
+            }
         } else if (settingsInput[i] >= '0' && settingsInput[i] <= '9') {
             // only handle number character
             number = number * 10;
             number += settingsInput[i] - 48;
-        } else if(settings[i] == '-') {
-            // can't have negative numbers
+        } else {
+            // can only have spaces and numbers
             return 1;
         }
 
@@ -153,7 +162,7 @@ int processSettingsInput(char * settingsInput){
     redOff = numbers[1];
 
     greenOn = numbers[2];
-    greenOff = numbers[3];
+    greenOff = number;
 
     return 0;
 }
@@ -208,7 +217,7 @@ fsm root {
         ser_in(Set_Intervals, settings, SETTINGS_LENGTH);
 
         if(processSettingsInput(settings) != 0)
-            proceed Adjust_Interval;
+            proceed Adjust_Intervals;
 
     state Start_Blinker:
 
@@ -220,7 +229,9 @@ fsm root {
             leds_all(0);
 
             killall(blinkerCode);
-            
+
+            trigger(&stopProcess);
+
             blinkerCode = runfsm blinker;
             blinkerRunning = YES;
         }
@@ -264,6 +275,8 @@ fsm root {
         if(blinkerCode != 0x0) {
             killall(blinkerCode);
         }
+
+        trigger(&stopProcess);
 
         // turn off all LEDs
         leds_all(0);

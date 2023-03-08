@@ -5985,10 +5985,9 @@ word redOn = 0;
 word redOff = 0;
 
 
-
-
 Boolean On = 0;
 Boolean displayCycle = 0;
+Boolean stopProcess = 0;
 
 
 
@@ -6007,9 +6006,10 @@ word adjustTime(word time) {
 
 #define Check_PERIOD 0
 #define OFF_PERIOD 1
-# 51 "app.cc"
+#define Stop 2
+# 50 "app.cc"
 void blinker (word __pi_st) { switch (__pi_st) { 
-# 51 "app.cc"
+# 50 "app.cc"
 
     static int led;
     static char ch;
@@ -6056,6 +6056,7 @@ void blinker (word __pi_st) { switch (__pi_st) {
         }
 
         __pi_wait ((aword)(&On),Check_PERIOD);
+        __pi_wait ((aword)(&stopProcess),Stop);
         __pi_release ();
     } case OFF_PERIOD : __stlab_OFF_PERIOD: {
 
@@ -6072,11 +6073,16 @@ void blinker (word __pi_st) { switch (__pi_st) {
             proceed (Check_PERIOD);
 
         __pi_wait ((aword)(&On),Check_PERIOD);
+        __pi_wait ((aword)(&stopProcess),Stop);
         __pi_release ();
+    } case Stop : __stlab_Stop: {
+        kill (0);
+
 break; } default: __pi_badstate (); } }
 #undef Check_PERIOD
 #undef OFF_PERIOD
-# 114 "app.cc"
+#undef Stop
+# 118 "app.cc"
 
 
 
@@ -6106,7 +6112,7 @@ int processSettingsInput(char * settingsInput){
 
             number = number * 10;
             number += settingsInput[i] - 48;
-        } else if(settings[i] == '-') {
+        } else if(settingsInput[i] == '-') {
 
             return 1;
         }
@@ -6139,9 +6145,9 @@ int processSettingsInput(char * settingsInput){
 #define Monitor 8
 #define Await_Stop 9
 #define Stop 10
-# 164 "app.cc"
+# 168 "app.cc"
 void root (word __pi_st) { switch (__pi_st) { 
-# 164 "app.cc"
+# 168 "app.cc"
 
 
     static char username[20];
@@ -6191,7 +6197,7 @@ void root (word __pi_st) { switch (__pi_st) {
         ser_in(Set_Intervals, settings, 50);
 
         if(processSettingsInput(settings) != 0)
-            proceed (Adjust_Interval);
+            proceed (Adjust_Intervals);
 
     } case Start_Blinker : __stlab_Start_Blinker: {
 
@@ -6203,6 +6209,12 @@ void root (word __pi_st) { switch (__pi_st) {
             do { if ((0) == 0) { do { GPIO_clearDio (6); GPIO_clearDio (7); do { } while (0); do { } while (0); __pi_systat.ledsts &= ~(0xF); } while (0); } else if ((0) == 1) { do { GPIO_setDio (6); GPIO_setDio (7); do { } while (0); do { } while (0); __pi_systat.ledsts &= ~(0xF); } while (0); } else { do { GPIO_setDio (6); GPIO_setDio (7); do { } while (0); do { } while (0); __pi_systat.ledsts |= (1 | 2 | 0 | 0); } while (0); tci_run_auxiliary_timer (); } } while (0);
 
             killall(blinkerCode);
+
+            sint runningNumber = crunning(blinkerCode);
+
+            diag("Number of %d: %d", blinkerCode, runningNumber);
+
+            __pi_trigger ((aword)(&stopProcess));
 
             blinkerCode = __pi_fork (blinker, 0);
             blinkerRunning = 1;
@@ -6248,6 +6260,8 @@ void root (word __pi_st) { switch (__pi_st) {
             killall(blinkerCode);
         }
 
+        __pi_trigger ((aword)(&stopProcess));
+
 
         do { if ((0) == 0) { do { GPIO_clearDio (6); GPIO_clearDio (7); do { } while (0); do { } while (0); __pi_systat.ledsts &= ~(0xF); } while (0); } else if ((0) == 1) { do { GPIO_setDio (6); GPIO_setDio (7); do { } while (0); do { } while (0); __pi_systat.ledsts &= ~(0xF); } while (0); } else { do { GPIO_setDio (6); GPIO_setDio (7); do { } while (0); do { } while (0); __pi_systat.ledsts |= (1 | 2 | 0 | 0); } while (0); tci_run_auxiliary_timer (); } } while (0);
 
@@ -6264,5 +6278,5 @@ break; } default: __pi_badstate (); } }
 #undef Monitor
 #undef Await_Stop
 #undef Stop
-# 274 "app.cc"
+# 286 "app.cc"
 
